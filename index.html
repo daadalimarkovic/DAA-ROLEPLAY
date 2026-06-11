@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DAA — Setter Training</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --black: #080c12;
+    --accent: #4a9eff; --green: #00d4aa; --gold: #f0b429; --red: #ff5a5a;
+    --white: #ffffff; --off: #c8d4e8; --muted: #5a7090; --border: rgba(255,255,255,0.08);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body { font-family: 'Barlow', sans-serif; background: var(--black); color: var(--white); min-height: 100vh; }
+  body::before { content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0; background-image: linear-gradient(rgba(74,158,255,0.018) 1px, transparent 1px), linear-gradient(90deg, rgba(74,158,255,0.018) 1px, transparent 1px); background-size: 64px 64px; }
+
+  .screen { display: none; position: relative; z-index: 1; }
+  .screen.active { display: flex; flex-direction: column; }
+  #screen-select, #screen-brief, #screen-debrief { min-height: 100vh; }
+  #screen-chat { height: 100vh; }
+
+  .wrap { max-width: 720px; margin: 0 auto; padding: 0 20px 80px; width: 100%; }
+  .bebas { font-family: 'Bebas Neue', sans-serif; }
+
+  .page-header { padding: 52px 0 36px; border-bottom: 1px solid var(--border); }
+  .eyebrow { font-size: 9px; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; color: var(--accent); margin-bottom: 12px; }
+  .page-title { font-family: 'Bebas Neue', sans-serif; font-size: clamp(36px,7vw,58px); line-height: 0.92; letter-spacing: 0.03em; margin-bottom: 12px; }
+  .page-sub { font-size: 13px; font-weight: 300; color: var(--muted); line-height: 1.6; max-width: 460px; }
+
+  .diff-list { padding-top: 36px; display: flex; flex-direction: column; gap: 12px; }
+  .diff-card { background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 12px; padding: 22px 24px; cursor: pointer; display: flex; align-items: center; gap: 20px; transition: border-color 0.2s, background 0.2s; text-align: left; width: 100%; color: var(--white); }
+  .diff-card:hover { border-color: rgba(255,255,255,0.18); background: rgba(255,255,255,0.04); }
+  .diff-bar { width: 4px; height: 52px; border-radius: 2px; flex-shrink: 0; }
+  .diff-info { flex: 1; }
+  .diff-name-row { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+  .diff-name { font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 0.04em; }
+  .diff-tag { font-size: 8px; font-weight: 700; letter-spacing: 0.18em; padding: 2px 8px; border-radius: 3px; border: 1px solid; }
+  .diff-desc { font-size: 11px; color: var(--muted); line-height: 1.5; }
+
+  .info-box { margin-top: 36px; padding: 18px 22px; background: rgba(74,158,255,0.04); border: 1px solid rgba(74,158,255,0.1); border-radius: 10px; }
+  .info-box-label { font-size: 10px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
+  .info-box-text { font-size: 11px; color: var(--muted); line-height: 1.7; }
+
+  .brief-stack { padding-top: 40px; display: flex; flex-direction: column; gap: 14px; }
+  .brief-card { padding: 22px 26px; background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 12px; }
+  .brief-card-label { font-size: 9px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+  .brief-prospect-name { font-family: 'Bebas Neue', sans-serif; font-size: 30px; letter-spacing: 0.04em; }
+  .brief-prospect-industry { font-size: 11px; color: var(--muted); margin-left: 10px; }
+  .brief-offer-text { font-size: 14px; font-weight: 600; color: var(--white); line-height: 1.5; }
+  .brief-situation-text { font-size: 13px; color: var(--off); line-height: 1.7; }
+  .brief-obj-box { padding: 18px 22px; background: rgba(240,180,41,0.04); border: 1px solid rgba(240,180,41,0.15); border-radius: 10px; }
+  .brief-obj-label { font-size: 9px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: var(--gold); margin-bottom: 6px; }
+  .brief-obj-text { font-size: 13px; color: var(--off); line-height: 1.6; }
+  .brief-actions { display: flex; gap: 10px; margin-top: 4px; }
+
+  .btn { font-family: 'Barlow', sans-serif; font-size: 9px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; border-radius: 10px; padding: 13px 20px; cursor: pointer; transition: all 0.2s; border: 1px solid; }
+  .btn-ghost { background: rgba(255,255,255,0.03); border-color: rgba(255,255,255,0.1); color: var(--muted); }
+  .btn-ghost:hover { background: rgba(255,255,255,0.06); color: var(--off); }
+  .btn-primary { flex: 1; }
+
+  .shimmer-card { padding: 24px 26px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; }
+  .shimmer-label { height: 10px; border-radius: 3px; background: rgba(255,255,255,0.04); width: 20%; margin-bottom: 12px; animation: shimmer 1.4s infinite; }
+  .shimmer-line { height: 14px; border-radius: 4px; background: rgba(255,255,255,0.04); animation: shimmer 1.4s infinite; }
+  @keyframes shimmer { 0%,100%{opacity:.4} 50%{opacity:.9} }
+
+  .back-btn { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 12px; font-family: 'Barlow', sans-serif; padding: 0; margin-bottom: 28px; }
+  .back-btn:hover { color: var(--off); }
+
+  #screen-chat { overflow: hidden; }
+  .chat-header { border-bottom: 1px solid var(--border); padding: 13px 20px; flex-shrink: 0; background: var(--black); position: relative; z-index: 2; }
+  .chat-header-inner { max-width: 720px; margin: 0 auto; width: 100%; display: flex; align-items: center; gap: 12px; }
+  .chat-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .chat-prospect { font-family: 'Bebas Neue', sans-serif; font-size: 15px; letter-spacing: 0.06em; }
+  .chat-industry { font-size: 9px; color: var(--muted); letter-spacing: 0.08em; }
+  .chat-header-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+  .booked-badge { font-size: 8px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--green); padding: 3px 10px; border: 1px solid rgba(0,212,170,0.3); border-radius: 4px; display: none; }
+  .booked-badge.visible { display: inline-block; }
+  .btn-debrief { background: rgba(0,212,170,0.08); border: 1px solid rgba(0,212,170,0.22); color: var(--green); border-radius: 7px; padding: 7px 14px; cursor: pointer; font-size: 9px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; font-family: 'Barlow', sans-serif; }
+  .btn-debrief:hover { background: rgba(0,212,170,0.14); }
+
+  .chat-messages { flex: 1; overflow-y: auto; padding: 24px 20px; max-width: 720px; width: 100%; margin: 0 auto; display: flex; flex-direction: column; }
+  .msg-row { display: flex; margin-bottom: 10px; align-items: flex-end; gap: 8px; }
+  .msg-row.setter { justify-content: flex-end; }
+  .msg-row.lead { justify-content: flex-start; }
+  .msg-tag { font-size: 8px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 2px; flex-shrink: 0; }
+  .msg-bubble { max-width: 72%; padding: 11px 15px; font-size: 13px; color: var(--off); line-height: 1.65; }
+  .msg-bubble.setter { background: rgba(74,158,255,0.1); border: 1px solid rgba(74,158,255,0.18); border-radius: 14px 14px 4px 14px; }
+  .msg-bubble.lead { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07); border-radius: 14px 14px 14px 4px; }
+  .msg-system { text-align: center; margin: 24px 0; }
+  .msg-system-badge { display: inline-block; font-size: 9px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--green); padding: 6px 16px; border: 1px solid rgba(0,212,170,0.25); border-radius: 20px; background: rgba(0,212,170,0.06); }
+  .msg-system-sub { margin-top: 8px; font-size: 10px; color: var(--muted); }
+
+  .typing-bubble { padding: 12px 16px; border-radius: 14px 14px 14px 4px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07); display: flex; gap: 4px; align-items: center; }
+  .typing-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--muted); animation: pulse 1.2s infinite; }
+  .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes pulse { 0%,100%{opacity:.3;transform:scale(.8)} 50%{opacity:1;transform:scale(1)} }
+
+  .chat-input-bar { border-top: 1px solid var(--border); padding: 12px 20px; flex-shrink: 0; background: var(--black); }
+  .chat-input-inner { max-width: 720px; margin: 0 auto; display: flex; gap: 10px; }
+  .chat-input { flex: 1; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 12px 16px; color: var(--white); font-size: 13px; outline: none; font-family: 'Barlow', sans-serif; transition: border-color 0.2s; }
+  .chat-input:focus { border-color: rgba(74,158,255,0.3); }
+  .chat-input:disabled { opacity: 0.4; }
+  .chat-send { background: rgba(74,158,255,0.14); border: 1px solid rgba(74,158,255,0.24); color: var(--accent); border-radius: 10px; padding: 0 18px; cursor: pointer; font-size: 16px; transition: opacity 0.2s; }
+  .chat-send:disabled { opacity: 0.3; cursor: default; }
+
+  .debrief-stack { padding-top: 36px; display: flex; flex-direction: column; gap: 18px; }
+  .score-card { display: flex; align-items: center; gap: 20px; padding: 22px 26px; background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 12px; }
+  .score-big { font-family: 'Bebas Neue', sans-serif; font-size: 64px; line-height: 1; }
+  .score-label { font-size: 9px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+  .score-sub { font-size: 13px; color: var(--off); }
+  .score-booked { margin-top: 5px; font-size: 9px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; }
+  .skills-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .skill-card { padding: 16px 18px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.07); border-radius: 10px; }
+  .skill-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 7px; }
+  .skill-name { font-size: 9px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+  .skill-score { font-family: 'Bebas Neue', sans-serif; font-size: 22px; line-height: 1; }
+  .skill-feedback { font-size: 11px; color: var(--muted); line-height: 1.6; }
+  .debrief-card { padding: 18px 22px; border-radius: 10px; border: 1px solid; }
+  .debrief-card-label { font-size: 9px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; margin-bottom: 8px; }
+  .debrief-card-text { font-size: 12px; color: var(--off); line-height: 1.7; }
+  .debrief-card.green { background: rgba(0,212,170,0.04); border-color: rgba(0,212,170,0.14); }
+  .debrief-card.green .debrief-card-label { color: var(--green); }
+  .debrief-card.red { background: rgba(255,90,90,0.04); border-color: rgba(255,90,90,0.14); }
+  .debrief-card.red .debrief-card-label { color: var(--red); }
+  .debrief-card.gold { background: rgba(240,180,41,0.04); border-color: rgba(240,180,41,0.18); }
+  .debrief-card.gold .debrief-card-label { color: var(--gold); }
+  .debrief-card.gold .debrief-card-text { font-size: 13px; font-weight: 600; color: var(--white); }
+  .debrief-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+  .debrief-loading { padding-top: 60px; text-align: center; font-size: 11px; color: var(--muted); letter-spacing: 0.1em; }
+
+  @media (max-width: 500px) {
+    .skills-grid { grid-template-columns: 1fr; }
+    .brief-actions { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+
+<!-- SELECT -->
+<div id="screen-select" class="screen active">
+  <div class="wrap">
+    <div class="page-header">
+      <div class="eyebrow">Digital Athlete Academy</div>
+      <div class="page-title bebas">SETTER<br><span style="color:var(--accent)">TRAINING.</span></div>
+      <div class="page-sub">Pick your difficulty. Every session generates a fresh prospect, a different industry, a new offer. No two reps are the same.</div>
+    </div>
+    <div class="diff-list">
+      <button class="diff-card" onclick="selectDifficulty('cold')">
+        <div class="diff-bar" style="background:var(--accent)"></div>
+        <div class="diff-info">
+          <div class="diff-name-row">
+            <span class="diff-name">Cold Lead</span>
+            <span class="diff-tag" style="color:var(--red);border-color:rgba(255,90,90,0.3);background:rgba(255,90,90,0.08)">HARDEST</span>
+          </div>
+          <div class="diff-desc">Never heard of your client. Barely engaged. Give nothing for free.</div>
+        </div>
+        <div style="color:var(--accent);font-size:18px;opacity:.5">→</div>
+      </button>
+      <button class="diff-card" onclick="selectDifficulty('warm')">
+        <div class="diff-bar" style="background:var(--green)"></div>
+        <div class="diff-info">
+          <div class="diff-name-row">
+            <span class="diff-name">Warm Lead</span>
+            <span class="diff-tag" style="color:var(--green);border-color:rgba(0,212,170,0.3);background:rgba(0,212,170,0.08)">STANDARD</span>
+          </div>
+          <div class="diff-desc">Watched a few reels. Curious but not committed. Needs direction.</div>
+        </div>
+        <div style="color:var(--green);font-size:18px;opacity:.5">→</div>
+      </button>
+      <button class="diff-card" onclick="selectDifficulty('resistant')">
+        <div class="diff-bar" style="background:var(--gold)"></div>
+        <div class="diff-info">
+          <div class="diff-name-row">
+            <span class="diff-name">Resistant Lead</span>
+            <span class="diff-tag" style="color:var(--gold);border-color:rgba(240,180,41,0.3);background:rgba(240,180,41,0.08)">ADVANCED</span>
+          </div>
+          <div class="diff-desc">Seen it before. Has objections loaded. Won't make it easy.</div>
+        </div>
+        <div style="color:var(--gold);font-size:18px;opacity:.5">→</div>
+      </button>
+    </div>
+    <div class="info-box">
+      <div class="info-box-label">The objective</div>
+      <div class="info-box-text">Run the conversation from the first DM to a booked call. Every session is different. End anytime and get a full debrief on what you did and what to fix.</div>
+    </div>
+  </div>
+</div>
+
+<!-- BRIEF -->
+<div id="screen-brief" class="screen">
+  <div class="wrap">
+    <div class="page-header">
+      <button class="back-btn" onclick="showScreen('select')">← Back</button>
+      <div class="eyebrow" id="brief-eyebrow"></div>
+      <div class="page-title bebas">YOUR<br><span id="brief-title-accent">BRIEF.</span></div>
+    </div>
+    <div id="brief-loading" class="brief-stack">
+      <div class="shimmer-card"><div class="shimmer-label"></div><div class="shimmer-line" style="width:30%"></div></div>
+      <div class="shimmer-card"><div class="shimmer-label"></div><div class="shimmer-line" style="width:80%"></div></div>
+      <div class="shimmer-card"><div class="shimmer-label"></div><div class="shimmer-line" style="width:95%"></div><div class="shimmer-line" style="width:70%;margin-top:8px"></div></div>
+    </div>
+    <div id="brief-content" class="brief-stack" style="display:none">
+      <div class="brief-card">
+        <div class="brief-card-label">Prospect</div>
+        <div style="display:flex;align-items:baseline">
+          <span class="brief-prospect-name bebas" id="brief-name"></span>
+          <span class="brief-prospect-industry" id="brief-industry"></span>
+        </div>
+      </div>
+      <div class="brief-card">
+        <div class="brief-card-label">You are setting for</div>
+        <div class="brief-offer-text" id="brief-offer"></div>
+      </div>
+      <div class="brief-card" id="brief-situation-card">
+        <div class="brief-card-label" id="brief-situation-label">Situation</div>
+        <div class="brief-situation-text" id="brief-situation"></div>
+      </div>
+      <div class="brief-obj-box">
+        <div class="brief-obj-label">Objective</div>
+        <div class="brief-obj-text">Book the call. Everything you say should be moving toward that.</div>
+      </div>
+      <div class="brief-actions">
+        <button class="btn btn-ghost" onclick="generateBrief()">↻ New Scenario</button>
+        <button class="btn btn-primary" id="btn-start-chat" onclick="startChat()">Start Conversation →</button>
+      </div>
+    </div>
+    <div id="brief-error" style="display:none;padding-top:40px">
+      <div style="color:var(--red);font-size:12px;margin-bottom:14px">Failed to generate scenario. Try again.</div>
+      <button class="btn btn-ghost" onclick="generateBrief()">Retry</button>
+    </div>
+  </div>
+</div>
+
+<!-- CHAT -->
+<div id="screen-chat" class="screen">
+  <div class="chat-header">
+    <div class="chat-header-inner">
+      <button class="back-btn" style="margin-bottom:0" onclick="showScreen('brief')">← Brief</button>
+      <div style="width:1px;height:18px;background:var(--border)"></div>
+      <div class="chat-dot" id="chat-dot"></div>
+      <span class="chat-prospect" id="chat-prospect-name"></span>
+      <span class="chat-industry" id="chat-industry-label"></span>
+      <div class="chat-header-right">
+        <span class="booked-badge" id="booked-badge">BOOKED</span>
+        <button class="btn-debrief" onclick="endAndDebrief()">End + Debrief →</button>
+      </div>
+    </div>
+  </div>
+  <div class="chat-messages" id="chat-messages"></div>
+  <div class="chat-input-bar">
+    <div class="chat-input-inner">
+      <input class="chat-input" id="chat-input" placeholder="Type your message..." onkeydown="handleInputKey(event)">
+      <button class="chat-send" id="chat-send" onclick="sendMessage()">→</button>
+    </div>
+  </div>
+</div>
+
+<!-- DEBRIEF -->
+<div id="screen-debrief" class="screen">
+  <div class="wrap">
+    <div class="page-header">
+      <div class="eyebrow" style="color:var(--green)">Session Complete</div>
+      <div class="page-title bebas">YOUR<br><span style="color:var(--green)">DEBRIEF.</span></div>
+    </div>
+    <div id="debrief-loading" class="debrief-loading">Analysing your conversation...</div>
+    <div id="debrief-content" class="debrief-stack" style="display:none">
+      <div class="score-card">
+        <div class="score-big" id="d-overall"></div>
+        <div>
+          <div class="score-label">Overall Score</div>
+          <div class="score-sub" id="d-meta"></div>
+          <div class="score-booked" id="d-booked"></div>
+        </div>
+      </div>
+      <div class="skills-grid" id="d-skills"></div>
+      <div class="debrief-card green"><div class="debrief-card-label">Best Moment</div><div class="debrief-card-text" id="d-best"></div></div>
+      <div class="debrief-card red"><div class="debrief-card-label">Biggest Miss</div><div class="debrief-card-text" id="d-miss"></div></div>
+      <div class="debrief-card gold"><div class="debrief-card-label">Fix This Next Rep</div><div class="debrief-card-text" id="d-one"></div></div>
+      <div class="debrief-actions">
+        <button class="btn" style="flex:1;min-width:140px;background:rgba(74,158,255,0.08);border-color:rgba(74,158,255,0.2);color:var(--accent)" onclick="generateBrief()">New Rep →</button>
+        <button class="btn" style="flex:1;min-width:140px;background:rgba(255,255,255,0.02);border-color:rgba(255,255,255,0.08);color:var(--muted)" onclick="showScreen('select')">Change Difficulty</button>
+      </div>
+    </div>
+    <div id="debrief-error" style="display:none;padding-top:40px">
+      <div style="color:var(--red);font-size:12px;margin-bottom:14px">Scoring failed. Try again.</div>
+      <button class="btn btn-ghost" onclick="endAndDebrief()">Retry Debrief</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const DIFFICULTY = {
+  cold:      { label: 'Cold Lead',      color: '#4a9eff' },
+  warm:      { label: 'Warm Lead',      color: '#00d4aa' },
+  resistant: { label: 'Resistant Lead', color: '#f0b429' }
+};
+
+const BRIEF_PROMPTS = {
+  cold: `Generate a cold Instagram DM lead scenario for an appointment setting role-play. The setter is reaching out cold — this person has never heard of the offer or the coach. They are a business owner or professional who posted publicly about a goal or problem. They are skeptical, not warm, give short answers.`,
+  warm: `Generate a warm Instagram DM lead scenario for an appointment setting role-play. The setter is reaching out to someone who has been watching the coach's content and engaged with posts. This person is curious but not committed. They have doubts about whether the program works for them.`,
+  resistant: `Generate a resistant Instagram DM lead scenario for an appointment setting role-play. This person has been pitched by online coaches before and had a bad experience. They are guarded, push back on vague answers, and need real honesty to open up. Not impossible — just requires skill.`
+};
+
+function briefGenPrompt(id) {
+  return `${BRIEF_PROMPTS[id]}
+
+Generate a realistic, varied scenario. Do not default to fitness or gym. Mix industries freely: e-commerce, trades, real estate, photography, recruiting, accounting, personal training, tutoring, law, marketing, health coaching, construction, tech, retail, etc.
+
+JSON only, no markdown, no backticks:
+{
+  "prospectName": "First name only. Australian or New Zealand male name.",
+  "industry": "2-3 words",
+  "offer": "High-ticket offer the setter is booking calls for. One sentence. Price $2,500-$6,000 AUD. Coaching, consulting, or skills program.",
+  "briefing": "2-3 sentences. What the setter knows going in. What triggered the outreach. No personal backstory — just the situation.",
+  "systemPrompt": "Full system prompt for the AI playing this lead. Include: name, industry, what they posted or did, emotional state and communication style for this difficulty, how they respond to genuine vs scripted setters, core pain point, when and how they agree to book (natural language). All responses under 3 sentences. No exclamation marks. Never break character. Never mention being an AI."
+}`;
+}
+
+function debriefPrompt(transcript, scenario) {
+  return `You are a sales coach reviewing an appointment setting role-play. Setter was booking a call with ${scenario.prospectName} (${scenario.industry}). Offer: ${scenario.offer}.
+
+Transcript:
+${transcript}
+
+Direct, honest, specific. Reference actual lines. No generic feedback.
+
+JSON only, no markdown, no backticks:
+{
+  "overall": 0-10,
+  "booked": true or false,
+  "skills": [
+    {"name": "Opener", "score": 0-10, "feedback": "1-2 sentences referencing what they actually said"},
+    {"name": "Acknowledgement", "score": 0-10, "feedback": "1-2 sentences referencing what they actually said"},
+    {"name": "Qualification", "score": 0-10, "feedback": "1-2 sentences referencing what they actually said"},
+    {"name": "Pitch", "score": 0-10, "feedback": "1-2 sentences referencing what they actually said"}
+  ],
+  "best_moment": "Quote the single best line the setter said, then explain in one sentence why it worked.",
+  "biggest_miss": "Quote the single biggest mistake, then one sentence on what to do instead.",
+  "one_thing": "One specific thing to fix before the next rep. Direct. No fluff."
+}`;
+}
+
+let state = { difficultyId: null, scenario: null, messages: [], chatLoading: false, isBooked: false };
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+function scoreColor(n) {
+  return n >= 8 ? '#00d4aa' : n >= 5 ? '#f0b429' : '#ff5a5a';
+}
+
+async function callAPI(messages, system) {
+  const body = { messages };
+  if (system) body.system = system;
+  const res = await fetch('/.netlify/functions/claude', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  const data = await res.json();
+  return data.content?.[0]?.text || '';
+}
+
+function selectDifficulty(id) {
+  state.difficultyId = id;
+  generateBrief();
+}
+
+async function generateBrief() {
+  const diff = DIFFICULTY[state.difficultyId];
+  document.getElementById('brief-eyebrow').textContent = diff.label;
+  document.getElementById('brief-title-accent').style.color = diff.color;
+  document.getElementById('brief-loading').style.display = 'flex';
+  document.getElementById('brief-content').style.display = 'none';
+  document.getElementById('brief-error').style.display = 'none';
+  showScreen('brief');
+
+  try {
+    const text = await callAPI([{ role: 'user', content: briefGenPrompt(state.difficultyId) }]);
+    const clean = text.replace(/```json|```/g, '').trim();
+    const parsed = JSON.parse(clean);
+    state.scenario = { ...parsed, difficultyId: state.difficultyId, label: diff.label, color: diff.color };
+
+    document.getElementById('brief-name').textContent = parsed.prospectName;
+    document.getElementById('brief-industry').textContent = parsed.industry;
+    document.getElementById('brief-offer').textContent = parsed.offer;
+    document.getElementById('brief-situation').textContent = parsed.briefing;
+    document.getElementById('brief-situation-card').style.borderColor = diff.color + '33';
+    document.getElementById('brief-situation-card').style.background = diff.color + '08';
+    document.getElementById('brief-situation-label').style.color = diff.color;
+
+    const btn = document.getElementById('btn-start-chat');
+    btn.style.background = diff.color + '18';
+    btn.style.borderColor = diff.color + '44';
+    btn.style.color = diff.color;
+
+    document.getElementById('brief-loading').style.display = 'none';
+    document.getElementById('brief-content').style.display = 'flex';
+  } catch(e) {
+    document.getElementById('brief-loading').style.display = 'none';
+    document.getElementById('brief-error').style.display = 'block';
+  }
+}
+
+async function startChat() {
+  state.messages = [];
+  state.isBooked = false;
+  state.chatLoading = false;
+  const s = state.scenario;
+
+  document.getElementById('chat-dot').style.background = s.color;
+  document.getElementById('chat-prospect-name').textContent = s.prospectName;
+  document.getElementById('chat-industry-label').textContent = s.industry;
+  document.getElementById('booked-badge').classList.remove('visible');
+  document.getElementById('chat-input').disabled = false;
+  document.getElementById('chat-input').placeholder = 'Type your message...';
+  document.getElementById('chat-messages').innerHTML = '';
+
+  showScreen('chat');
+  setChatLoading(true);
+
+  try {
+    const reply = await callAPI(
+      [{ role: 'user', content: 'Start the conversation. You are the lead — send the very first DM. One sentence only. Realistic, like a short reply to a post or story. Do not be overly friendly.' }],
+      s.systemPrompt
+    );
+    state.messages.push({ role: 'lead', text: reply });
+    renderMessage({ role: 'lead', text: reply });
+  } catch(e) {}
+
+  setChatLoading(false);
+  document.getElementById('chat-input').focus();
+}
+
+function setChatLoading(val) {
+  state.chatLoading = val;
+  document.getElementById('chat-send').disabled = val;
+  val ? showTyping() : hideTyping();
+}
+
+function showTyping() {
+  const msgs = document.getElementById('chat-messages');
+  if (document.getElementById('typing-indicator')) return;
+  const row = document.createElement('div');
+  row.className = 'msg-row lead';
+  row.id = 'typing-indicator';
+  row.innerHTML = `<div class="msg-tag" style="color:${state.scenario.color}">${state.scenario.prospectName.slice(0,3).toUpperCase()}</div><div class="typing-bubble"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>`;
+  msgs.appendChild(row);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function hideTyping() {
+  const el = document.getElementById('typing-indicator');
+  if (el) el.remove();
+}
+
+function escHtml(t) {
+  return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function renderMessage(m) {
+  const msgs = document.getElementById('chat-messages');
+  if (m.role === 'system') {
+    const div = document.createElement('div');
+    div.className = 'msg-system';
+    div.innerHTML = `<div class="msg-system-badge">${m.text}</div><div class="msg-system-sub">Hit End + Debrief to see how you did.</div>`;
+    msgs.appendChild(div);
+  } else {
+    const row = document.createElement('div');
+    row.className = `msg-row ${m.role}`;
+    row.innerHTML = m.role === 'lead'
+      ? `<div class="msg-tag" style="color:${state.scenario.color}">${state.scenario.prospectName.slice(0,3).toUpperCase()}</div><div class="msg-bubble lead">${escHtml(m.text)}</div>`
+      : `<div class="msg-bubble setter">${escHtml(m.text)}</div><div class="msg-tag" style="color:var(--accent)">YOU</div>`;
+    msgs.appendChild(row);
+  }
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function handleInputKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+}
+
+async function sendMessage() {
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  if (!text || state.chatLoading || state.isBooked) return;
+  input.value = '';
+
+  const m = { role: 'setter', text };
+  state.messages.push(m);
+  renderMessage(m);
+  setChatLoading(true);
+
+  const apiMsgs = [];
+  for (const msg of state.messages) {
+    const role = msg.role === 'setter' ? 'user' : 'assistant';
+    if (apiMsgs.length === 0 && role === 'assistant') continue;
+    if (apiMsgs.length > 0 && apiMsgs[apiMsgs.length-1].role === role) {
+      apiMsgs[apiMsgs.length-1].content += '\n' + msg.text;
+    } else {
+      apiMsgs.push({ role, content: msg.text });
+    }
+  }
+
+  try {
+    const reply = await callAPI(apiMsgs, state.scenario.systemPrompt);
+    setChatLoading(false);
+    const leadMsg = { role: 'lead', text: reply };
+    state.messages.push(leadMsg);
+    renderMessage(leadMsg);
+
+    const booked = /send me the link|book it|i.ll jump on|i am keen|sounds good|let.s do it|send.*details|yeah.*alright|alright.*fair|i.ll book|sure.*send|okay.*send|yeah.*keen|send.*through|jump on|alright.*yeah|yeah.*okay/i.test(reply);
+    if (booked && !state.isBooked) {
+      state.isBooked = true;
+      setTimeout(() => {
+        const sysMsg = { role: 'system', text: 'Call booked. Session complete.' };
+        state.messages.push(sysMsg);
+        renderMessage(sysMsg);
+        document.getElementById('booked-badge').classList.add('visible');
+        document.getElementById('chat-input').disabled = true;
+        document.getElementById('chat-input').placeholder = 'Session complete — hit End + Debrief';
+      }, 500);
+    }
+  } catch(e) {
+    setChatLoading(false);
+  }
+}
+
+async function endAndDebrief() {
+  showScreen('debrief');
+  document.getElementById('debrief-loading').style.display = 'block';
+  document.getElementById('debrief-content').style.display = 'none';
+  document.getElementById('debrief-error').style.display = 'none';
+
+  const transcript = state.messages
+    .filter(m => m.role !== 'system')
+    .map(m => `${m.role === 'setter' ? 'SETTER' : 'LEAD'}: ${m.text}`)
+    .join('\n');
+
+  try {
+    const text = await callAPI([{ role: 'user', content: debriefPrompt(transcript, state.scenario) }]);
+    const clean = text.replace(/```json|```/g, '').trim();
+    const d = JSON.parse(clean);
+
+    document.getElementById('debrief-loading').style.display = 'none';
+    const overall = document.getElementById('d-overall');
+    overall.textContent = d.overall;
+    overall.style.color = scoreColor(d.overall);
+    document.getElementById('d-meta').textContent = `${state.scenario.prospectName} — ${state.scenario.label}`;
+    const bookedEl = document.getElementById('d-booked');
+    bookedEl.textContent = d.booked ? '✓ Call booked' : '✗ Call not booked';
+    bookedEl.style.color = d.booked ? '#00d4aa' : '#ff5a5a';
+
+    const skillsGrid = document.getElementById('d-skills');
+    skillsGrid.innerHTML = '';
+    (d.skills || []).forEach(skill => {
+      const card = document.createElement('div');
+      card.className = 'skill-card';
+      card.innerHTML = `<div class="skill-header"><span class="skill-name">${skill.name}</span><span class="skill-score" style="color:${scoreColor(skill.score)}">${skill.score}</span></div><div class="skill-feedback">${skill.feedback}</div>`;
+      skillsGrid.appendChild(card);
+    });
+
+    document.getElementById('d-best').textContent = d.best_moment;
+    document.getElementById('d-miss').textContent = d.biggest_miss;
+    document.getElementById('d-one').textContent = d.one_thing;
+    document.getElementById('debrief-content').style.display = 'flex';
+  } catch(e) {
+    document.getElementById('debrief-loading').style.display = 'none';
+    document.getElementById('debrief-error').style.display = 'block';
+  }
+}
+</script>
+</body>
+</html>
